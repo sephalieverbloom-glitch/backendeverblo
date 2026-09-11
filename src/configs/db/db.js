@@ -1,12 +1,14 @@
 import mongoose from "mongoose";
 import dns from "node:dns";
 
-// Configure DNS resolution for Windows / ISP DNS reliability
-try {
-  dns.setDefaultResultOrder("ipv4first");
-  dns.setServers(["8.8.8.8", "1.1.1.1"]);
-} catch {
-  // Ignore in environments where setting DNS servers is restricted
+// Configure DNS resolution only outside of Vercel/production environments
+if (!process.env.VERCEL && process.env.NODE_ENV !== "production") {
+  try {
+    dns.setDefaultResultOrder("ipv4first");
+    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+  } catch {
+    // Ignore in environments where setting DNS servers is restricted
+  }
 }
 
 let cached = global.mongoose;
@@ -20,8 +22,9 @@ const connectToDb = async () => {
     return cached.conn;
   }
 
-  if (!process.env.MONGODB_URL) {
-    throw new Error("MONGODB_URL environment variable is not defined");
+  const mongoUri = process.env.MONGODB_URL || process.env.MONGO_URI;
+  if (!mongoUri) {
+    throw new Error("MONGODB_URL or MONGO_URI environment variable is not defined");
   }
 
   if (!cached.promise) {
@@ -32,7 +35,7 @@ const connectToDb = async () => {
       maxPoolSize: 10,
     };
 
-    cached.promise = mongoose.connect(process.env.MONGODB_URL, opts).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(mongoUri, opts).then((mongooseInstance) => {
       console.log(`✅ Connected to MongoDB Database: ${opts.dbName}`);
       return mongooseInstance;
     });

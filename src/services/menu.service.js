@@ -191,7 +191,8 @@ export const getAllMenuItemsService = async (query = {}) => {
     filter.$or = [{ name: searchRegex }, { description: searchRegex }, { category: searchRegex }];
   }
 
-  let sortOption = { sectionNumber: 1, displayOrder: 1, createdAt: -1 };
+  let sortOption = { createdAt: -1 };
+  if (query.sortBy === "displayOrder") sortOption = { sectionNumber: 1, displayOrder: 1, createdAt: -1 };
   if (query.sortBy === "price_asc") sortOption = { price: 1 };
   if (query.sortBy === "price_desc") sortOption = { price: -1 };
   if (query.sortBy === "name") sortOption = { name: 1 };
@@ -202,9 +203,10 @@ export const getAllMenuItemsService = async (query = {}) => {
 
 /**
  * Get items grouped by category and section structure (matching frontend layout)
+ * Newly added dishes appear first in their respective section.
  */
 export const getGroupedMenuItemsService = async () => {
-  const allItems = await MenuItem.find().sort({ sectionNumber: 1, displayOrder: 1, createdAt: 1 }).lean();
+  const allItems = await MenuItem.find().sort({ sectionNumber: 1, createdAt: -1 }).lean();
 
   if (allItems.length === 0) {
     // Return default fallback structure if database hasn't been seeded yet

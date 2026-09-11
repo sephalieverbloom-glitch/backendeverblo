@@ -8,7 +8,7 @@ export const createMenuItemSchema = z.object({
   category: z.string({ required_error: "Category is required" }).trim(),
   sectionNumber: z.string().optional().default("01"),
   sectionEyebrow: z.string().optional().default("SPECIALTY"),
-  image: z.string().url("Valid image URL or path is required").optional(),
+  image: z.string().optional(),
   isVegetarian: z.coerce.boolean().optional().default(true),
   isAvailable: z.coerce.boolean().optional().default(true),
   isSpecial: z.coerce.boolean().optional().default(false),

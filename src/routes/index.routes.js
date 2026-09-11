@@ -3,6 +3,8 @@ import menuRoutes from "./menu.routes.js";
 import reservationRoutes from "./reservation.routes.js";
 import contactRoutes from "./contact.routes.js";
 import adminRoutes from "./admin.routes.js";
+import galleryRoutes from "./gallery.routes.js";
+import popupRoutes from "./popup.routes.js";
 
 const router = express.Router();
 
@@ -21,5 +23,8 @@ router.use("/menu", menuRoutes);
 router.use("/reservations", reservationRoutes);
 router.use("/contact", contactRoutes);
 router.use("/admin", adminRoutes);
+router.use("/photos", galleryRoutes);
+router.use("/gallery", galleryRoutes);
+router.use("/popups", popupRoutes);
 
 export default router;
