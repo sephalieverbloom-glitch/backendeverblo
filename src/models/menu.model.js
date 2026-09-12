@@ -26,6 +26,11 @@ const menuItemSchema = new mongoose.Schema(
       required: [true, "Price is required"],
       min: [0, "Price cannot be negative"],
     },
+    priceDisplay: {
+      type: String,
+      default: null,
+      trim: true,
+    },
     currency: {
       type: String,
       default: "₹",

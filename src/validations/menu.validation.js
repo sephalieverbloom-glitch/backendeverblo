@@ -13,7 +13,18 @@ export const createMenuItemSchema = z.object({
   isAvailable: z.coerce.boolean().optional().default(true),
   isSpecial: z.coerce.boolean().optional().default(false),
   displayOrder: z.coerce.number().optional().default(0),
-  tags: z.array(z.string()).optional(),
+  tags: z.preprocess((val) => {
+    if (typeof val === "string") {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return val.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+      return val.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return val;
+  }, z.array(z.string()).optional()),
 });
 
 export const updateMenuItemSchema = z.object({
@@ -29,7 +40,18 @@ export const updateMenuItemSchema = z.object({
   isAvailable: z.coerce.boolean().optional(),
   isSpecial: z.coerce.boolean().optional(),
   displayOrder: z.coerce.number().optional(),
-  tags: z.array(z.string()).optional(),
+  tags: z.preprocess((val) => {
+    if (typeof val === "string") {
+      try {
+        const parsed = JSON.parse(val);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        return val.split(",").map((s) => s.trim()).filter(Boolean);
+      }
+      return val.split(",").map((s) => s.trim()).filter(Boolean);
+    }
+    return val;
+  }, z.array(z.string()).optional()),
 });
 
 export const updatePriceSchema = z.object({
@@ -46,4 +68,6 @@ export const menuQuerySchema = z.object({
   isVegetarian: z.enum(["true", "false"]).optional(),
   isAvailable: z.enum(["true", "false"]).optional(),
   sortBy: z.enum(["displayOrder", "price_asc", "price_desc", "name"]).optional(),
+  page: z.coerce.number().min(1).default(1).optional(),
+  limit: z.coerce.number().min(1).max(200).optional(),
 });

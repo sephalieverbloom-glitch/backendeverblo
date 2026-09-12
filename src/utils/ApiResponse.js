@@ -9,13 +9,16 @@ class ApiResponse {
    * @param {any} [data=null] - Payload data
    * @param {number} [statusCode=200] - HTTP status code
    */
-  static success(res, message = "Success", data = null, statusCode = 200) {
+  static success(res, message = "Success", data = null, statusCode = 200, meta = null) {
     const responseBody = {
       success: true,
       message,
     };
     if (data !== null && data !== undefined) {
       responseBody.data = data;
+    }
+    if (meta && typeof meta === "object") {
+      Object.assign(responseBody, meta);
     }
     return res.status(statusCode).json(responseBody);
   }

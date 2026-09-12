@@ -13,8 +13,8 @@ import {
 } from "../services/menu.service.js";
 
 export const getAllMenuItems = asyncHandler(async (req, res) => {
-  const items = await getAllMenuItemsService(req.query);
-  return ApiResponse.success(res, "Menu items retrieved successfully", items);
+  const { items, pagination } = await getAllMenuItemsService(req.query);
+  return ApiResponse.success(res, "Menu items retrieved successfully", items, 200, { pagination });
 });
 
 export const getGroupedMenuItems = asyncHandler(async (req, res) => {

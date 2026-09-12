@@ -1,3 +1,4 @@
+import fs from "fs";
 import MenuItem from "../models/menu.model.js";
 import ApiError from "../utils/ApiError.js";
 import slugify from "../utils/slugify.js";
@@ -174,7 +175,7 @@ const generateUniqueSlug = async (name, excludeId = null) => {
 export const getAllMenuItemsService = async (query = {}) => {
   const filter = {};
 
-  if (query.category) {
+  if (query.category && query.category.trim() !== "" && query.category.toUpperCase() !== "ALL") {
     filter.category = new RegExp(`^${query.category.trim()}$`, "i");
   }
 
@@ -192,13 +193,36 @@ export const getAllMenuItemsService = async (query = {}) => {
   }
 
   let sortOption = { createdAt: -1 };
-  if (query.sortBy === "displayOrder") sortOption = { sectionNumber: 1, displayOrder: 1, createdAt: -1 };
+  if (query.sortBy === "displayOrder" || !query.sortBy) sortOption = { sectionNumber: 1, displayOrder: 1, createdAt: -1 };
   if (query.sortBy === "price_asc") sortOption = { price: 1 };
   if (query.sortBy === "price_desc") sortOption = { price: -1 };
   if (query.sortBy === "name") sortOption = { name: 1 };
 
-  const items = await MenuItem.find(filter).sort(sortOption).lean();
-  return items;
+  const totalItems = await MenuItem.countDocuments(filter);
+
+  let queryBuilder = MenuItem.find(filter).sort(sortOption);
+
+  const page = query.page ? Math.max(1, parseInt(query.page, 10)) : 1;
+  const limit = query.limit ? Math.max(1, parseInt(query.limit, 10)) : 0;
+
+  if (limit > 0) {
+    const skip = (page - 1) * limit;
+    queryBuilder = queryBuilder.skip(skip).limit(limit);
+  }
+
+  const items = await queryBuilder.lean();
+  const totalPages = limit > 0 ? Math.max(1, Math.ceil(totalItems / limit)) : 1;
+
+  const pagination = {
+    totalItems,
+    totalPages,
+    currentPage: page,
+    limit: limit > 0 ? limit : totalItems,
+    hasNextPage: limit > 0 ? page < totalPages : false,
+    hasPrevPage: limit > 0 ? page > 1 : false,
+  };
+
+  return { items, pagination };
 };
 
 /**
@@ -206,7 +230,7 @@ export const getAllMenuItemsService = async (query = {}) => {
  * Newly added dishes appear first in their respective section.
  */
 export const getGroupedMenuItemsService = async () => {
-  const allItems = await MenuItem.find().sort({ sectionNumber: 1, createdAt: -1 }).lean();
+  const allItems = await MenuItem.find().sort({ sectionNumber: 1, displayOrder: 1, createdAt: -1 }).lean();
 
   if (allItems.length === 0) {
     // Return default fallback structure if database hasn't been seeded yet
@@ -231,7 +255,7 @@ export const getGroupedMenuItemsService = async () => {
       _id: item._id,
       id: item._id,
       name: item.name,
-      price: `${item.currency || "₹"}${item.price}`,
+      price: item.priceDisplay || `${item.currency || "₹"}${item.price}`,
       numericPrice: item.price,
       desc: item.description,
       image: item.image,
@@ -384,27 +408,39 @@ export const seedDefaultMenuItemsService = async (force = false) => {
     await MenuItem.deleteMany({});
   }
 
-  const itemsToInsert = [];
-  let displayCounter = 1;
+  let itemsToInsert = [];
+  try {
+    const jsonPath = new URL("../data/menuItems.json", import.meta.url);
+    if (fs.existsSync(jsonPath)) {
+      const raw = fs.readFileSync(jsonPath, "utf8");
+      itemsToInsert = JSON.parse(raw);
+    }
+  } catch (err) {
+    console.warn("Could not load menuItems.json, falling back to DEFAULT_SECTIONS:", err.message);
+  }
 
-  for (const sec of DEFAULT_SECTIONS) {
-    for (const item of sec.items) {
-      const slug = slugify(item.name);
-      itemsToInsert.push({
-        name: item.name,
-        slug,
-        description: item.desc,
-        price: item.price,
-        currency: "₹",
-        category: sec.title,
-        sectionNumber: sec.number,
-        sectionEyebrow: sec.eyebrow,
-        image: item.image,
-        isVegetarian: item.isVegetarian !== undefined ? item.isVegetarian : true,
-        isAvailable: true,
-        isSpecial: false,
-        displayOrder: displayCounter++,
-      });
+  if (!itemsToInsert || itemsToInsert.length === 0) {
+    itemsToInsert = [];
+    let displayCounter = 1;
+    for (const sec of DEFAULT_SECTIONS) {
+      for (const item of sec.items) {
+        const slug = slugify(item.name);
+        itemsToInsert.push({
+          name: item.name,
+          slug,
+          description: item.desc,
+          price: item.price,
+          currency: "₹",
+          category: sec.title,
+          sectionNumber: sec.number,
+          sectionEyebrow: sec.eyebrow,
+          image: item.image,
+          isVegetarian: item.isVegetarian !== undefined ? item.isVegetarian : true,
+          isAvailable: true,
+          isSpecial: false,
+          displayOrder: displayCounter++,
+        });
+      }
     }
   }
 

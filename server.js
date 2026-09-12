@@ -16,7 +16,7 @@ try {
 }
 
 const PORT = process.env.PORT || 8080;
-const allowedClientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedClientUrl = process.env.CLIENT_URL || "http://localhost:3000";
 
 const server = http.createServer(app);
 
