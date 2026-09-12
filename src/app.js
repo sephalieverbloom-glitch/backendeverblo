@@ -91,8 +91,14 @@ if (process.env.NODE_ENV !== "production") {
 
 // Serverless DB Connection Middleware (connects on cold start, reuses cached connection on warm runs)
 app.use(async (req, res, next) => {
-  // Skip DB connection for root health ping
-  if (req.path === "/" || req.path === "/health") {
+  // Skip DB connection for root health ping and OPTIONS preflight requests
+  if (
+    req.method === "OPTIONS" ||
+    req.path === "/" ||
+    req.path === "/health" ||
+    req.path === "/api/v1/health" ||
+    req.path.endsWith("/health")
+  ) {
     return next();
   }
   try {
@@ -102,7 +108,8 @@ app.use(async (req, res, next) => {
     console.error("Database connection failure:", error.message);
     return res.status(503).json({
       success: false,
-      message: "Database service temporarily unavailable. Please try again shortly.",
+      message: "Database service temporarily unavailable. Please verify MONGODB_URL and MongoDB Atlas Network Access (0.0.0.0/0).",
+      error: error.message,
     });
   }
 });
