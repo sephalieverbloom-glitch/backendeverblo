@@ -26,7 +26,7 @@ app.use(
 );
 
 // Dynamic CORS configuration (supporting localhost, custom client URL, and *.vercel.app preview URLs)
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:5173";
+const allowedOrigin = process.env.CLIENT_URL || "http://localhost:3000";
 app.use(
   cors({
     origin: (origin, callback) => {
