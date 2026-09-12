@@ -77,7 +77,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
 
 // Body Parsers & Cookie Parser (1mb limit suitable for serverless)
 app.use(express.json({ limit: "1mb" }));
