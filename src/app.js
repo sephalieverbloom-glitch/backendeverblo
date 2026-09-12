@@ -25,35 +25,59 @@ app.use(
   })
 );
 
-// Dynamic CORS configuration (supporting localhost, custom client URL, and *.vercel.app preview URLs)
-const allowedOrigin = process.env.CLIENT_URL || "http://localhost:3000";
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, Postman)
-      if (!origin) return callback(null, true);
+// Dynamic CORS configuration (supporting everbloomcafe.com, localhost, custom client URLs, and *.vercel.app preview URLs)
+const defaultAllowedOrigins = [
+  "https://everbloomcafe.com",
+  "https://www.everbloomcafe.com",
+  "http://everbloomcafe.com",
+  "http://www.everbloomcafe.com",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
 
-      // Allow local development ports
-      if (
-        origin.startsWith("http://localhost:") ||
-        origin.startsWith("http://127.0.0.1:") ||
-        origin === allowedOrigin ||
-        origin.endsWith(".vercel.app") // Vercel preview environments
-      ) {
-        return callback(null, true);
-      }
+if (process.env.CLIENT_URL) {
+  const envOrigins = process.env.CLIENT_URL.split(",").map((s) => s.trim().replace(/\/$/, ""));
+  defaultAllowedOrigins.push(...envOrigins);
+}
 
-      if (process.env.NODE_ENV !== "production") {
-        return callback(null, true);
-      }
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // Allow non-browser requests (mobile, curl, Postman, server-to-server)
+  const cleanOrigin = origin.replace(/\/$/, "");
 
-      return callback(new Error("CORS policy violation: Unauthorized origin"), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-refresh-token"],
-  })
-);
+  if (defaultAllowedOrigins.includes(cleanOrigin)) return true;
+  if (cleanOrigin.startsWith("http://localhost:") || cleanOrigin.startsWith("http://127.0.0.1:")) return true;
+  if (cleanOrigin.endsWith(".vercel.app") || cleanOrigin.endsWith("vercel.app")) return true;
+  if (cleanOrigin.endsWith("everbloomcafe.com") || cleanOrigin.includes("everbloomcafe")) return true;
+  if (process.env.NODE_ENV !== "production") return true;
+
+  return false;
+};
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "x-refresh-token",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "x-access-token",
+  ],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Body Parsers & Cookie Parser (1mb limit suitable for serverless)
 app.use(express.json({ limit: "1mb" }));

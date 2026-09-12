@@ -29,6 +29,8 @@ export const io = new Server(server, {
         origin.startsWith("http://localhost:") ||
         origin.startsWith("http://127.0.0.1:") ||
         origin.endsWith(".vercel.app") ||
+        origin.endsWith("everbloomcafe.com") ||
+        origin.includes("everbloomcafe") ||
         process.env.NODE_ENV !== "production"
       ) {
         return callback(null, true);
